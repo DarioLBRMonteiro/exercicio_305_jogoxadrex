@@ -2,13 +2,17 @@ package chess.pieces;
 
 import boardgame.Board;
 import boardgame.Position;
+import chess.ChessMatch;
 import chess.ChessPiece;
 import chess.Color;
 
 public class King extends ChessPiece{
+	
+	private ChessMatch chessMath;
 
-	public King(Board board, Color color) {
+	public King(Board board, Color color, ChessMatch chessMath) {
 		super(board, color);
+		this.chessMath = chessMath;
 	}
 	
 	@Override
@@ -21,6 +25,11 @@ public class King extends ChessPiece{
 		return p == null || p.getColor() != getColor();
 	}
 
+	public boolean testRookCastling(Position position) {
+		ChessPiece p = (ChessPiece)getBoard().piece(position);
+		return p != null && p instanceof Rook && p.getColor() == getColor() && p.getMoveCount() == 0;
+	}
+	
 	@Override
 	public boolean[][] possibleMoves() {
 		boolean[][] mat = new boolean[getBoard().getRows()][getBoard().getColumns()];
@@ -63,18 +72,55 @@ public class King extends ChessPiece{
 			mat[p.getRow()][p.getColumn()] = true;
 		}
 		
-		//suldoeste
+		//sudoeste
 		p.setValues(position.getRow() + 1, position.getColumn() - 1);
 		if (getBoard().positionExists(p) && canMove(p)) {
 			mat[p.getRow()][p.getColumn()] = true;
 		}
 		
-		//suldeste
+		//sudeste
 		p.setValues(position.getRow() + 1, position.getColumn() + 1);
 		if (getBoard().positionExists(p) && canMove(p)) {
 			mat[p.getRow()][p.getColumn()] = true;
 		}
 		
+		// movimento especial ROQUE
+		if (getMoveCount() == 0 && !chessMath.getCheck()) {
+			//movimento especial ROQUE pequeno
+			Position posT1 = new Position(position.getRow(),position.getColumn() + 3);
+			if (testRookCastling(posT1)) {
+				Position p1 = new Position(position.getRow(), position.getColumn() + 1);
+				Position p2 = new Position(position.getRow(), position.getColumn() + 2);
+				if (getBoard().piece(p1) == null && 
+					getBoard().piece(p2) == null &&
+					(
+					(!(chessMath.testPositionForCheck(getColor(),p1))) && 
+					(!(chessMath.testPositionForCheck(getColor(),p2)))
+					)
+					) {
+					mat[position.getRow()][position.getColumn() + 2] = true;
+				}
+			}
+			
+			//movimento especial ROQUE grande
+			Position posT2 = new Position(position.getRow(),position.getColumn() - 4);
+			if (testRookCastling(posT2)) {
+				Position p1 = new Position(position.getRow(), position.getColumn() - 1);
+				Position p2 = new Position(position.getRow(), position.getColumn() - 2);
+				Position p3 = new Position(position.getRow(), position.getColumn() - 3);
+				if (getBoard().piece(p1) == null && 
+					getBoard().piece(p2) == null && 
+					getBoard().piece(p3) == null && 
+					(
+					(!(chessMath.testPositionForCheck(getColor(),p1))) && 
+					(!(chessMath.testPositionForCheck(getColor(),p2))) && 
+					(!(chessMath.testPositionForCheck(getColor(),p3)))
+					)
+					) {
+					mat[position.getRow()][position.getColumn() - 2] = true;
+				}
+			}			
+		}		
 		return mat;
 	}
 }
